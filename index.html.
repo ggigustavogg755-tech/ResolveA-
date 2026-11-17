@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#123b35">
+<meta name="description" content="ResolveAí: ferramentas gratuitas para facilitar seu dia.">
+<title>ResolveAí - Ferramentas gratuitas</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f6f4;color:#172522}
+header{background:#123b35;color:white;padding:28px 20px 35px}
+.header-content,main{max-width:850px;margin:auto}
+header h1{font-size:32px;margin:0}
+header p{color:#d7e9e2;margin-bottom:20px}
+main{padding:22px 16px}
+.search{width:100%;padding:16px;border:1px solid #cbd8d1;border-radius:13px;font-size:16px;background:white}
+h2{font-size:21px;margin-top:25px}
+.categories{display:flex;gap:9px;overflow-x:auto;padding:5px 0 12px}
+.category{border:1px solid #d7e2dc;background:white;color:#24443a;padding:10px 14px;border-radius:20px;white-space:nowrap;cursor:pointer}
+.category.active{background:#176b55;color:white;border-color:#176b55}
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.tool{background:white;padding:17px 13px;border-radius:14px;border:1px solid #e2e9e5;cursor:pointer;min-height:112px;text-align:left;color:#172522}
+.tool:active{transform:scale(.98)}
+.tool span{display:block;color:#176b55;font-size:25px;margin-bottom:9px}
+.tool strong{font-size:14px}
+.tool small{display:block;color:#75847e;margin-top:6px}
+.tool.disabled{opacity:.65;cursor:default}
+.badge{font-size:10px;background:#edf3ef;color:#567064;padding:4px 7px;border-radius:10px}
+footer{text-align:center;padding:30px 15px;color:#63736e;font-size:13px}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:5;align-items:center;justify-content:center;padding:15px}
+.modal.show{display:flex}
+.modal-content{background:white;border-radius:18px;padding:22px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
+.modal-content h2{margin-top:0}
+.modal-content label{display:block;font-size:13px;margin:14px 0 6px}
+.modal-content input{width:100%;padding:13px;border:1px solid #cbd8d1;border-radius:10px;font-size:16px}
+.action{width:100%;padding:14px;border:0;border-radius:11px;background:#176b55;color:white;font-size:16px;margin-top:18px;cursor:pointer}
+.close{float:right;border:0;background:#edf3ef;border-radius:50%;width:34px;height:34px;font-size:18px;cursor:pointer}
+.result{background:#edf6f0;padding:15px;border-radius:12px;margin-top:15px;color:#123b35;font-weight:bold;display:none;overflow-wrap:anywhere}
+.empty{text-align:center;color:#75847e;padding:30px;grid-column:1/-1}
+@media(min-width:600px){.tools{grid-template-columns:repeat(3,minmax(0,1fr))}header{padding:35px 25px}}
+</style>
+</head>
+
+<body>
+<header>
+ <div class="header-content">
+  <h1>ResolveAí</h1>
+  <p>Tudo o que você precisa resolver em um só lugar.</p>
+ </div>
+</header>
+
+<main>
+ <h2>Encontre sua ferramenta</h2>
+ <input class="search" id="search" type="search" placeholder="Pesquisar ferramentas...">
+
+ <h2>Categorias</h2>
+ <div class="categories" id="categories">
+  <button class="category active" data-category="Todas">Todas</button>
+  <button class="category" data-category="Dinheiro">＄ Dinheiro</button>
+  <button class="category" data-category="Calculadoras">＋ Calculadoras</button>
+  <button class="category" data-category="Trabalho">▣ Trabalho</button>
+  <button class="category" data-category="Tempo">◷ Tempo</button>
+  <button class="category" data-category="Conversores">⇄ Conversores</button>
+  <button class="category" data-category="Cotidiano">⌂ Cotidiano</button>
+ </div>
+
+ <h2 id="sectionTitle">Todas as ferramentas</h2>
+ <div class="tools" id="tools"></div>
+</main>
+
+<footer>
+ <strong>ResolveAí</strong><br>
+ Ferramentas gratuitas para facilitar seu dia.
+</footer>
+
+<div class="modal" id="modal">
+ <div class="modal-content">
+  <button class="close" id="close">×</button>
+  <h2 id="modalTitle">Ferramenta</h2>
+  <div id="formArea"></div>
+  <div class="result" id="result"></div>
+ </div>
+</div>
+
+<script>
+const ferramentas = [
+ {nome:"Calculadora básica",icone:"＋",cat:"Calculadoras",tipo:"basica",ativa:true},
+ {nome:"Calculadora de porcentagem",icone:"％",cat:"Dinheiro",tipo:"porcentagem",ativa:true},
+ {nome:"Calculadora de desconto",icone:"％",cat:"Dinheiro",tipo:"desconto",ativa:true},
+ {nome:"Juros simples",icone:"＄",cat:"Dinheiro",tipo:"juros",ativa:true},
+ {nome:"Regra de três",icone:"÷",cat:"Calculadoras",tipo:"regra",ativa:true},
+ {nome:"Média escolar",icone:"▤",cat:"Calculadoras",tipo:"media",ativa:true},
+ {nome:"Divisor de contas",icone:"＄",cat:"Dinheiro"},
+ {nome:"Calculadora de gorjeta",icone:"％",cat:"Dinheiro"},
+ {nome:"Comparador de preços",icone:"🛒",cat:"Dinheiro"},
+ {nome:"Calculadora de economia",icone:"＄",cat:"Dinheiro"},
+ {nome:"Salário líquido",icone:"＄",cat:"Trabalho"},
+ {nome:"Horas trabalhadas",icone:"◷",cat:"Trabalho"},
+ {nome:"Calculadora de hora extra",icone:"◷",cat:"Trabalho"},
+ {nome:"Calculadora de férias",icone:"▣",cat:"Trabalho"},
+ {nome:"Décimo terceiro",icone:"＄",cat:"Trabalho"},
+ {nome:"Calculadora de idade",icone:"◷",cat:"Tempo"},
+ {nome:"Diferença entre datas",icone:"▦",cat:"Tempo"},
+ {nome:"Contagem regressiva",icone:"◷",cat:"Tempo"},
+ {nome:"Conversor de quilômetros",icone:"⇄",cat:"Conversores"},
+ {nome:"Conversor de peso",icone:"⇄",cat:"Conversores"},
+ {nome:"Conversor de temperatura",icone:"℃",cat:"Conversores"},
+ {nome:"Conversor de volume",icone:"⇄",cat:"Conversores"},
+ {nome:"Conversor de medidas",icone:"⇄",cat:"Conversores"},
+ {nome:"Consumo de combustível",icone:"⛽",cat:"Cotidiano"},
+ {nome:"Calculadora de distância",icone:"⇄",cat:"Cotidiano"},
+ {nome:"Calculadora de velocidade",icone:"➜",cat:"Cotidiano"},
+ {nome:"Calculadora de IMC",icone:"＋",cat:"Cotidiano"},
+ {nome:"Gasto de energia",icone:"⚡",cat:"Cotidiano"},
+ {nome:"Calculadora de financiamento",icone:"＄",cat:"Dinheiro"},
+ {nome:"Juros compostos",icone:"＄",cat:"Dinheiro"}
+];
+
+let categoriaAtual="Todas";
+const tools=document.getElementById("tools");
+const search=document.getElementById("search");
+
+function renderizar(){
+ const termo=search.value.toLowerCase().trim();
+ const lista=ferramentas.filter(f=>
+  (categoriaAtual==="Todas"||f.cat===categoriaAtual)&&
+  f.nome.toLowerCase().includes(termo)
+ );
+ tools.innerHTML="";
+ document.getElementById("sectionTitle").textContent=
+  categoriaAtual==="Todas"?"Todas as ferramentas":categoriaAtual;
+
+ if(!lista.length){
+  tools.innerHTML='<div class="empty">Nenhuma ferramenta encontrada.</div>';
+  return;
+ }
+
+ lista.forEach(f=>{
+  const card=document.createElement("button");
+  card.className="tool"+(f.ativa?"":" disabled");
+  card.innerHTML=`<span>${f.icone}</span><strong>${f.nome}</strong><small>${f.ativa?"Disponível agora":"<span class='badge'>Em breve</span>"}</small>`;
+  card.addEventListener("click",()=>f.ativa?abrirFerramenta(f):alert("Esta ferramenta será implementada em uma próxima atualização."));
+  tools.appendChild(card);
+ });
+}
+
+document.getElementById("categories").addEventListener("click",e=>{
+ const botao=e.target.closest("button");
+ if(!botao)return;
+ categoriaAtual=botao.dataset.category;
+ document.querySelectorAll(".category").forEach(b=>b.classList.toggle("active",b===botao));
+ renderizar();
+});
+search.addEventListener("input",renderizar);
+
+const modal=document.getElementById("modal");
+const formArea=document.getElementById("formArea");
+const result=document.getElementById("result");
+
+function campo(id,nome,placeholder="Digite um valor"){
+ return `<label for="${id}">${nome}</label><input id="${id}" type="number" step="any" placeholder="${placeholder}" required>`;
+}
+
+function abrirFerramenta(f){
+ document.getElementById("modalTitle").textContent=f.nome;
+ result.style.display="none";
+ let html="";
+
+ if(f.tipo==="basica"){
+  html=campo("a","Primeiro número")+`<label for="op">Operação</label><select id="op" style="width:100%;padding:12px;border-radius:10px"><option value="+">Somar (+)</option><option value="-">Subtrair (-)</option><option value="*">Multiplicar (×)</option><option value="/">Dividir (÷)</option></select>`+campo("b","Segundo número");
+ }
+ if(f.tipo==="porcentagem")html=campo("a","Valor")+campo("b","Porcentagem (%)");
+ if(f.tipo==="desconto")html=campo("a","Preço original (R$)")+campo("b","Desconto (%)");
+ if(f.tipo==="juros")html=campo("a","Capital inicial (R$)")+campo("b","Taxa de juros ao mês (%)")+campo("c","Tempo (meses)");
+ if(f.tipo==="regra")html=campo("a","Valor A")+campo("b","Valor B")+campo("c","Valor C");
+ if(f.tipo==="media")html=campo("a","Nota 1")+campo("b","Nota 2")+campo("c","Nota 3")+campo("d","Nota 4");
+
+ formArea.innerHTML=html+`<button class="action" id="calculate">Calcular</button>`;
+ document.getElementById("calculate").addEventListener("click",()=>calcular(f.tipo));
+ modal.classList.add("show");
+}
+
+function numero(id){return Number(document.getElementById(id).value)}
+function dinheiro(n){return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+function mostrar(texto){
+ result.textContent=texto;
+ result.style.display="block";
+}
+
+function calcular(tipo){
+ let a=numero("a"),b=numero("b"),c=tipo==="basica"?0:numero("c"),valor;
+
+ if(!Number.isFinite(a)||!Number.isFinite(b)||
+  (tipo!=="basica"&&!Number.isFinite(c))){
+  mostrar("Preencha todos os campos corretamente.");
+  return;
+ }
+
+ if(tipo==="basica"){
+  const op=document.getElementById("op").value;
+  if(op==="/"&&b===0){mostrar("Não é possível dividir por zero.");return}
+  valor=op==="+"?a+b:op==="-"?a-b:op==="*"?a*b:a/b;
+  mostrar("Resultado: "+valor.toLocaleString("pt-BR"));
+ }
+ if(tipo==="porcentagem"){
+  valor=a*b/100;
+  mostrar(b+"% de "+a+" = "+dinheiro(valor));
+ }
+ if(tipo==="desconto"){
+  if(a<0||b<0||b>100){mostrar("Confira os valores. O desconto deve estar entre 0% e 100%.");return}
+  valor=a-(a*b/100);
+  mostrar("Preço com desconto: "+dinheiro(valor)+" (economia de "+dinheiro(a-valor)+")");
+ }
+ if(tipo==="juros"){
+  if(a<0||b<0||c<0){mostrar("Use valores positivos.");return}
+  let juros=a*(b/100)*c;
+  mostrar("Juros: "+dinheiro(juros)+" | Total: "+dinheiro(a+juros));
+ }
+ if(tipo==="regra"){
+  if(a===0){mostrar("O valor A não pode ser zero.");return}
+  valor=b*c/a;
+  mostrar("Resultado: "+valor.toLocaleString("pt-BR"));
+ }
+ if(tipo==="media"){
+  const d=numero("d");
+  if(!Number.isFinite(d)){mostrar("Preencha todas as notas.");return}
+  valor=(a+b+c+d)/4;
+  mostrar("Média: "+valor.toLocaleString("pt-BR",{maximumFractionDigits:2})+(valor>=6?" — Aprovado pela média 6.":" — Abaixo da média 6."));
+ }
+}
+
+document.getElementById("close").addEventListener("click",()=>modal.classList.remove("show"));
+modal.addEventListener("click",e=>{if(e.target===modal)modal.classList.remove("show")});
+renderizar();
+</script>
+</body>
+</html>
+
